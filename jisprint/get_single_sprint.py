@@ -1,11 +1,11 @@
 import argparse
-from jira import JIRA
-import dateutil.parser
 import logging
 import sys
 from pprint import pprint
 
-logging.basicConfig()
+import dateutil.parser
+from jira import JIRA
+
 log = logging.getLogger('tool')
 
 # See https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
@@ -18,29 +18,6 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
-
-parser = argparse.ArgumentParser(description="JIRA spring summary tool")
-parser.add_argument("host", type=str, help="the JIRA server host")
-parser.add_argument("sprint", type=int, help="the sprint id")
-parser.add_argument("--verbose", type=str2bool, nargs='?', const=True, help="be verbose", default=False)
-parser.add_argument("--users", type=str2bool, nargs='?', const=True, help="show user info", default=False)
-
-args = parser.parse_args()
-
-
-if args.verbose:
-    logging.getLogger().setLevel(logging.DEBUG)
-    log.setLevel(logging.DEBUG)
-    log.debug('Debug mode enabled')
-
-jira = JIRA({"server": "https://" + args.host})
-
-jql = "Sprint = {sprint_id} AND issuetype in (Story, Bug, Task, subTaskIssueTypes())".format(
-    sprint_id=args.sprint
-)
-
-results = jira.search_issues(jql)
-print("Found %d results" % len(results))
 
 userCache = {}
 def get_user(key):
@@ -150,5 +127,34 @@ def get_sprint_infos(sprint_id):
     print("{delta}d {start_date} -> {end_date}".format(delta=delta, start_date=start_date, end_date=end_date))
 
 
-get_sprint_infos(args.sprint)
-create_summary(results)
+def main()
+    logging.basicConfig()
+
+    parser = argparse.ArgumentParser(description="JIRA spring summary tool")
+    parser.add_argument("host", type=str, help="the JIRA server host")
+    parser.add_argument("sprint", type=int, help="the sprint id")
+    parser.add_argument("--verbose", type=str2bool, nargs='?', const=True, help="be verbose", default=False)
+    parser.add_argument("--users", type=str2bool, nargs='?', const=True, help="show user info", default=False)
+
+    args = parser.parse_args()
+
+
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+        log.setLevel(logging.DEBUG)
+        log.debug('Debug mode enabled')
+
+    jira = JIRA({"server": "https://" + args.host})
+
+    jql = "Sprint = {sprint_id} AND issuetype in (Story, Bug, Task, subTaskIssueTypes())".format(
+        sprint_id=args.sprint
+    )
+
+    results = jira.search_issues(jql)
+    print("Found %d results" % len(results))
+
+    get_sprint_infos(args.sprint)
+    create_summary(results)
+
+if __name__ == "__main__":
+    main()
