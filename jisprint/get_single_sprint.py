@@ -1,41 +1,40 @@
 import argparse
 import logging
-import sys
-from pprint import pprint
 
 import dateutil.parser
 from jira import JIRA
 
-log = logging.getLogger('tool')
+log = logging.getLogger("tool")
 
 # See https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
 def str2bool(v):
     if isinstance(v, bool):
-       return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return v
+    if v.lower() in ("yes", "true", "t", "y", "1"):
         return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+    if v.lower() in ("no", "false", "f", "n", "0"):
         return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
+    raise argparse.ArgumentTypeError("Boolean value expected.")
+
 
 userCache = {}
+
+
 def get_user(jiraobj, key):
     if key in userCache:
         return userCache[key]
-    if 'JIRAUSER' in key:
+    if "JIRAUSER" in key:
         # find real name associated to that cryptic key
-        username = jiraobj.find('user?key=%s' % key).name
+        username = jiraobj.find("user?key=%s" % key).name
         userCache[key] = username
         return username
-    else:
-        return key
+    return key
 
 
 def get_time_spent_by_user(jiraobj, issue, since, until, by_user):
     all_seconds = 0
     worklogs = jiraobj.worklogs(issue.id)
-    log.debug('Getting worklog of issue %s: %s', issue.key, issue.fields.summary)
+    log.debug("Getting worklog of issue %s: %s", issue.key, issue.fields.summary)
     count = 0
     skipped = 0
     for w in worklogs:
@@ -43,14 +42,14 @@ def get_time_spent_by_user(jiraobj, issue, since, until, by_user):
         user = get_user(jiraobj, w.author.key)
         started = dateutil.parser.parse(w.started)
         started = started.replace(tzinfo=None)  # trash timezone to be consistent
-        if (started > until or started < since):
+        if started > until or started < since:
             skipped = skipped + spent
-            log.debug('----> skipped: %s %s on %s: %s', user, w.timeSpent, started, w.comment or '')
+            log.debug("----> skipped: %s %s on %s: %s", user, w.timeSpent, started, w.comment or "")
             continue
         all_seconds = all_seconds + spent
         count = count + spent
         by_user[user] = by_user.get(user, 0) + spent
-        log.debug('-> %s %s on %s: %s', user, w.timeSpent, started, w.comment or '')
+        log.debug("-> %s %s on %s: %s", user, w.timeSpent, started, w.comment or "")
     return all_seconds, skipped
 
 
@@ -79,12 +78,14 @@ def create_summary(jiraobj, issues, start_date, end_date):
         category_key = fields.status.statusCategory.key
         summary = fields.summary
         key = issue.key
-        if issuetype == 'Sub-task':
-          key = fields.parent.key + '/' + key
-        storypoints = getattr(fields, 'customfield_10006', None) or 0
+        if issuetype == "Sub-task":
+            key = fields.parent.key + "/" + key
+        storypoints = getattr(fields, "customfield_10006", None) or 0
         # remaining = fields.timeestimate
         # not using fields.timespent since it may include worklogs outside the sprint time span
-        time_spent, skipped_time_spent =  get_time_spent_by_user(jiraobj, issue, start_date, end_date, time_spent_by_user)
+        time_spent, skipped_time_spent = get_time_spent_by_user(
+            jiraobj, issue, start_date, end_date, time_spent_by_user
+        )
         all_timespent = all_timespent + time_spent
         all_skipped_timespent = all_skipped_timespent + skipped_time_spent
         days_spent = round1(to_working_days(time_spent))
@@ -110,7 +111,10 @@ def create_summary(jiraobj, issues, start_date, end_date):
     print("velocity: %s" % str(round1(done_sp / days_spent)))
     print(round_object(time_spent_by_user, 1 / to_working_days(1)))
     if skipped_time_spent != 0:
-        log.warning("Some worklogs were skipped because outside the sprint time span: %s days" % round1(to_working_days(all_skipped_timespent)))
+        log.warning(
+            "Some worklogs were skipped because outside the sprint time span: %s days",
+            round1(to_working_days(all_skipped_timespent)),
+        )
 
 
 def main():
@@ -119,15 +123,16 @@ def main():
     parser = argparse.ArgumentParser(description="JIRA spring summary tool")
     parser.add_argument("host", type=str, help="the JIRA server host")
     parser.add_argument("sprint", type=int, help="the sprint id")
-    parser.add_argument("--debug", type=str2bool, nargs='?', const=True, help="be more verbose", default=False)
+    parser.add_argument(
+        "--debug", type=str2bool, nargs="?", const=True, help="be more verbose", default=False
+    )
 
     args = parser.parse_args()
-
 
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
         log.setLevel(logging.DEBUG)
-        log.debug('Debug mode enabled')
+        log.debug("Debug mode enabled")
 
     jiraobj = JIRA({"server": "https://" + args.host})
 
@@ -148,6 +153,7 @@ def main():
     print("{delta}d {start_date} -> {end_date}".format(delta=delta, start_date=start_date, end_date=end_date))
 
     create_summary(jiraobj, results, start_date, end_date)
+
 
 if __name__ == "__main__":
     main()
