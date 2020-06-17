@@ -32,29 +32,26 @@ def get_user(jiraobj, key):
         return key
 
 
-def get_time_spent_by_user(jiraobj, issues):
-    by_user = {}
+def get_time_spent_by_user(jiraobj, issue, since, until, by_user):
     all_seconds = 0
-    for issue in issues:
-        worklogs = jiraobj.worklogs(issue.id)
-        log.debug('Getting worklog of issue %s: %s', issue.key, issue.fields.summary)
-        count = 0
-        for w in worklogs:
-            user = get_user(jiraobj, w.author.key)
-            spent = w.timeSpentSeconds
-            all_seconds = all_seconds + spent
-            count = count + spent
-            by_user[user] = by_user.get(user, 0) + spent
-            log.debug('-> %s %s on %s: %s', user, w.timeSpent, w.updated, w.comment or '')
-        log.debug('Time spent check: %s ==? %s', count, issue.fields.timespent)
-    return by_user, all_seconds
-
-
-def get_fast_time_spent(issues):
-    all_seconds = 0
-    for issue in issues:
-        all_seconds = all_seconds + (issue.fields.timespent or 0)  # is it OK to skip like this?
-    return all_seconds
+    worklogs = jiraobj.worklogs(issue.id)
+    log.debug('Getting worklog of issue %s: %s', issue.key, issue.fields.summary)
+    count = 0
+    skipped = 0
+    for w in worklogs:
+        spent = w.timeSpentSeconds
+        user = get_user(jiraobj, w.author.key)
+        started = dateutil.parser.parse(w.started)
+        started = started.replace(tzinfo=None)  # trash timezone to be consistent
+        if (started > until or started < since):
+            skipped = skipped + spent
+            log.debug('----> skipped: %s %s on %s: %s', user, w.timeSpent, started, w.comment or '')
+            continue
+        all_seconds = all_seconds + spent
+        count = count + spent
+        by_user[user] = by_user.get(user, 0) + spent
+        log.debug('-> %s %s on %s: %s', user, w.timeSpent, started, w.comment or '')
+    return all_seconds, skipped
 
 
 def round1(value):
@@ -69,11 +66,13 @@ def to_working_days(seconds):
     return seconds / (8.4 * 3600)
 
 
-def create_summary(jiraobj, issues, user_details):
+def create_summary(jiraobj, issues, user_details, start_date, end_date):
     done_sp = 0
     failed_sp = 0
     formatted_list = []
     all_timespent = 0
+    all_skipped_timespent = 0
+    time_spent_by_user = {}
     for issue in issues:
         fields = issue.fields
         issuetype = fields.issuetype.name
@@ -84,10 +83,12 @@ def create_summary(jiraobj, issues, user_details):
           key = fields.parent.key + '/' + key
         storypoints = getattr(fields, 'customfield_10006', None) or 0
         # remaining = fields.timeestimate
-        time_spent = fields.timespent or 0
+        # not using fields.timespent since it may include worklogs outside the sprint time span
+        time_spent, skipped_time_spent =  get_time_spent_by_user(jiraobj, issue, start_date, end_date, time_spent_by_user)
         all_timespent = all_timespent + time_spent
+        all_skipped_timespent = all_skipped_timespent + skipped_time_spent
         days_spent = round1(to_working_days(time_spent))
-        formatted = "{category_key} {issuetype} {days_spent} / {storypoints}sp: {key} {summary}".format(
+        formatted = "{category_key:5.5} {issuetype:5.5} {days_spent}d / {storypoints}sp {key} {summary}".format(
             category_key=category_key,
             issuetype=issuetype,
             key=key,
@@ -108,23 +109,10 @@ def create_summary(jiraobj, issues, user_details):
     print("days spent: %s" % round1(days_spent))
     print("velocity: %s" % str(round1(done_sp / days_spent)))
 
-    total = 0
     if user_details:
-        by_user, total = get_time_spent_by_user(jiraobj, issues)
-        print(round_object(by_user, 1 / to_working_days(1)))
-    else:
-        total = get_fast_time_spent(issues)
-    if total != all_timespent:
-        log.error("time spen mismatch: %s == %s" % (total, all_timespent))
-
-
-def get_sprint_infos(jiraobj, sprint_id):
-    sprint = jiraobj.sprint(sprint_id)
-    start_date = dateutil.parser.parse(sprint.startDate)
-    end_date = dateutil.parser.parse(sprint.endDate)
-    delta = (end_date - start_date).days
-    print("Sprint infos: %s %s" % (sprint.name, sprint.goal))
-    print("{delta}d {start_date} -> {end_date}".format(delta=delta, start_date=start_date, end_date=end_date))
+        print(round_object(time_spent_by_user, 1 / to_working_days(1)))
+    if skipped_time_spent != 0:
+        log.warning("Some worklogs were skipped because outside the sprint time span: %s days" % round1(to_working_days(all_skipped_timespent)))
 
 
 def main():
@@ -151,10 +139,18 @@ def main():
     )
 
     results = jiraobj.search_issues(jql)
-    print("Found %d results" % len(results))
+    sprint = jiraobj.sprint(args.sprint)
+    start_date = dateutil.parser.parse(sprint.startDate)
+    end_date = dateutil.parser.parse(sprint.endDate)
+    # Some worklogs are created at 0:0:0, so to consider them during the sprint
+    # we extend the time span of the sprint to the entire start and end days
+    start_date = start_date.replace(hour=0, minute=0, second=0)
+    end_date = end_date.replace(hour=23, minute=0, second=0)
+    delta = (end_date - start_date).days
+    print("Sprint infos: %s %s" % (sprint.name, sprint.goal))
+    print("{delta}d {start_date} -> {end_date}".format(delta=delta, start_date=start_date, end_date=end_date))
 
-    get_sprint_infos(jiraobj, args.sprint)
-    create_summary(jiraobj, results, args.users)
+    create_summary(jiraobj, results, args.users, start_date, end_date)
 
 if __name__ == "__main__":
     main()
