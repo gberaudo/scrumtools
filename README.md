@@ -19,7 +19,7 @@ Before running the tool, make sure your credentials are present in the [~/.netrc
 
 Exemple usage:
 
-```venv/bin/python jisprint/get_single_sprint.py 1128```
+```venv/bin/python jisprint/get_single_sprint.py jira.camptocamp.com 1128```
 
 
 ## Contributing
