@@ -66,7 +66,7 @@ def to_working_days(seconds):
     return seconds / (8.4 * 3600)
 
 
-def create_summary(jiraobj, issues, user_details, start_date, end_date):
+def create_summary(jiraobj, issues, start_date, end_date):
     done_sp = 0
     failed_sp = 0
     formatted_list = []
@@ -108,9 +108,7 @@ def create_summary(jiraobj, issues, user_details, start_date, end_date):
     days_spent = to_working_days(all_timespent)
     print("days spent: %s" % round1(days_spent))
     print("velocity: %s" % str(round1(done_sp / days_spent)))
-
-    if user_details:
-        print(round_object(time_spent_by_user, 1 / to_working_days(1)))
+    print(round_object(time_spent_by_user, 1 / to_working_days(1)))
     if skipped_time_spent != 0:
         log.warning("Some worklogs were skipped because outside the sprint time span: %s days" % round1(to_working_days(all_skipped_timespent)))
 
@@ -121,13 +119,12 @@ def main():
     parser = argparse.ArgumentParser(description="JIRA spring summary tool")
     parser.add_argument("host", type=str, help="the JIRA server host")
     parser.add_argument("sprint", type=int, help="the sprint id")
-    parser.add_argument("--verbose", type=str2bool, nargs='?', const=True, help="be verbose", default=False)
-    parser.add_argument("--users", type=str2bool, nargs='?', const=True, help="show user info", default=False)
+    parser.add_argument("--debug", type=str2bool, nargs='?', const=True, help="be more verbose", default=False)
 
     args = parser.parse_args()
 
 
-    if args.verbose:
+    if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
         log.setLevel(logging.DEBUG)
         log.debug('Debug mode enabled')
@@ -150,7 +147,7 @@ def main():
     print("Sprint infos: %s %s" % (sprint.name, sprint.goal))
     print("{delta}d {start_date} -> {end_date}".format(delta=delta, start_date=start_date, end_date=end_date))
 
-    create_summary(jiraobj, results, args.users, start_date, end_date)
+    create_summary(jiraobj, results, start_date, end_date)
 
 if __name__ == "__main__":
     main()
