@@ -121,8 +121,8 @@ def main():
     logging.basicConfig()
 
     parser = argparse.ArgumentParser(description="JIRA spring summary tool")
-    parser.add_argument("host", type=str, help="the JIRA server host")
     parser.add_argument("sprint", type=int, help="the sprint id")
+    parser.add_argument("--host", type=str, default="jira.camptocamp.com", help="the JIRA server host")
     parser.add_argument(
         "--debug", type=str2bool, nargs="?", const=True, help="be more verbose", default=False
     )
