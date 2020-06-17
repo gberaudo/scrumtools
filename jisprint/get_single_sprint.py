@@ -20,27 +20,27 @@ def str2bool(v):
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
 userCache = {}
-def get_user(key):
+def get_user(jiraobj, key):
     if key in userCache:
         return userCache[key]
     if 'JIRAUSER' in key:
         # find real name associated to that cryptic key
-        username = jira.find('user?key=%s' % key).name
+        username = jiraobj.find('user?key=%s' % key).name
         userCache[key] = username
         return username
     else:
         return key
 
 
-def get_time_spent_by_user(issues):
+def get_time_spent_by_user(jiraobj, issues):
     by_user = {}
     all_seconds = 0
     for issue in issues:
-        worklogs = jira.worklogs(issue.id)
+        worklogs = jiraobj.worklogs(issue.id)
         log.debug('Getting worklog of issue %s: %s', issue.key, issue.fields.summary)
         count = 0
         for w in worklogs:
-            user = get_user(w.author.key)
+            user = get_user(jiraobj, w.author.key)
             spent = w.timeSpentSeconds
             all_seconds = all_seconds + spent
             count = count + spent
@@ -69,7 +69,7 @@ def to_working_days(seconds):
     return seconds / (8.4 * 3600)
 
 
-def create_summary(issues):
+def create_summary(jiraobj, issues, user_details):
     done_sp = 0
     failed_sp = 0
     formatted_list = []
@@ -109,8 +109,8 @@ def create_summary(issues):
     print("velocity: %s" % str(round1(done_sp / days_spent)))
 
     total = 0
-    if args.users:
-        by_user, total = get_time_spent_by_user(issues)
+    if user_details:
+        by_user, total = get_time_spent_by_user(jiraobj, issues)
         print(round_object(by_user, 1 / to_working_days(1)))
     else:
         total = get_fast_time_spent(issues)
@@ -118,8 +118,8 @@ def create_summary(issues):
         log.error("time spen mismatch: %s == %s" % (total, all_timespent))
 
 
-def get_sprint_infos(sprint_id):
-    sprint = jira.sprint(sprint_id)
+def get_sprint_infos(jiraobj, sprint_id):
+    sprint = jiraobj.sprint(sprint_id)
     start_date = dateutil.parser.parse(sprint.startDate)
     end_date = dateutil.parser.parse(sprint.endDate)
     delta = (end_date - start_date).days
@@ -127,7 +127,7 @@ def get_sprint_infos(sprint_id):
     print("{delta}d {start_date} -> {end_date}".format(delta=delta, start_date=start_date, end_date=end_date))
 
 
-def main()
+def main():
     logging.basicConfig()
 
     parser = argparse.ArgumentParser(description="JIRA spring summary tool")
@@ -144,17 +144,17 @@ def main()
         log.setLevel(logging.DEBUG)
         log.debug('Debug mode enabled')
 
-    jira = JIRA({"server": "https://" + args.host})
+    jiraobj = JIRA({"server": "https://" + args.host})
 
     jql = "Sprint = {sprint_id} AND issuetype in (Story, Bug, Task, subTaskIssueTypes())".format(
         sprint_id=args.sprint
     )
 
-    results = jira.search_issues(jql)
+    results = jiraobj.search_issues(jql)
     print("Found %d results" % len(results))
 
-    get_sprint_infos(args.sprint)
-    create_summary(results)
+    get_sprint_infos(jiraobj, args.sprint)
+    create_summary(jiraobj, results, args.users)
 
 if __name__ == "__main__":
     main()
