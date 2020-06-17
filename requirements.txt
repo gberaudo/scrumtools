@@ -1,5 +1,0 @@
-argparse
-python-dateutil
-jira
-black
-
