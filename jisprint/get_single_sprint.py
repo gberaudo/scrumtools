@@ -109,7 +109,9 @@ def create_summary(jiraobj, issues, start_date, end_date):
     days_spent = to_working_days(all_timespent)
     print("days spent: %s" % round1(days_spent))
     print("velocity: %s" % str(round1(done_sp / days_spent)))
-    print(round_object(time_spent_by_user, 1 / to_working_days(1)))
+    print("By user:")
+    for name, time in round_object(time_spent_by_user, 1 / to_working_days(1)).items():
+        print("  {}: {}".format(name, time))
     if skipped_time_spent != 0:
         log.warning(
             "Some worklogs were skipped because outside the sprint time span: %s days",
