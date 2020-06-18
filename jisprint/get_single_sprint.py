@@ -42,9 +42,9 @@ def get_time_spent_by_user(jiraobj, issue, since, until, by_user):
         user = get_user(jiraobj, w.author.key)
         started = dateutil.parser.parse(w.started)
         started = started.replace(tzinfo=None)  # trash timezone to be consistent
-        if started > until or started < since:
-            skipped += spent
+        if since is not None and until is not None and (started < since or started >= until):
             log.debug("----> skipped: %s %s on %s: %s", user, w.timeSpent, started, w.comment or "")
+            skipped += spent
             continue
         all_seconds += spent
         count += spent
@@ -104,19 +104,21 @@ def create_summary(jiraobj, issues, start_date, end_date):
             failed_sp += storypoints
     formatted_list = sorted(formatted_list)
     print("\n".join(formatted_list))
+    print("sprint start: %s (including)" % start_date)
+    print("sprint end: %s (excluding)" % end_date)
     print("storypoints done: %d" % done_sp)
     print("storypoints failed: %d" % failed_sp)
     days_spent = to_working_days(all_timespent)
     print("days spent: %s" % round1(days_spent))
-    print("velocity: %s" % str(round1(done_sp / days_spent)))
+    the_velocity = 0 if days_spent == 0 else round1(done_sp / days_spent)
+    print("velocity: %s" % str(the_velocity))
     print("By user:")
     for name, time in round_object(time_spent_by_user, 1 / to_working_days(1)).items():
         print("  {}: {}".format(name, time))
-    if skipped_time_spent != 0:
-        log.warning(
-            "Some worklogs were skipped because outside the sprint time span: %s days",
-            round1(to_working_days(all_skipped_timespent)),
-        )
+    log.debug(
+        "Some worklogs were skipped because outside the sprint time span: %s days",
+        round1(to_working_days(all_skipped_timespent)),
+    )
 
 
 def main():
@@ -125,6 +127,9 @@ def main():
     parser = argparse.ArgumentParser(description="JIRA spring summary tool")
     parser.add_argument("sprint", type=int, help="the sprint id")
     parser.add_argument("--host", type=str, default="jira.camptocamp.com", help="the JIRA server host")
+    parser.add_argument(
+        "--allworklogs", type=str2bool, nargs="?", const=True, help="Include all worklogs", default=False
+    )
     parser.add_argument(
         "--debug", type=str2bool, nargs="?", const=True, help="be more verbose", default=False
     )
@@ -146,14 +151,22 @@ def main():
     sprint = jiraobj.sprint(args.sprint)
     start_date = dateutil.parser.parse(sprint.startDate)
     end_date = dateutil.parser.parse(sprint.endDate)
-    # Some worklogs are created at 0:0:0, so to consider them during the sprint
-    # we extend the time span of the sprint to the entire start and end days
-    start_date = start_date.replace(hour=0, minute=0, second=0)
-    end_date = end_date.replace(hour=23, minute=0, second=0)
     delta = (end_date - start_date).days
     print("Sprint infos: %s %s" % (sprint.name, sprint.goal))
     print("{delta}d {start_date} -> {end_date}".format(delta=delta, start_date=start_date, end_date=end_date))
 
+    # The start date is forced to be at 00:00:00, the sprints starts the day of the planning, at 00:00:00.
+    # The end date is forced to be at 00:00:00, the sprint ends the day before at 23:59:59).
+    # Reasonning:
+    # When doing the retro we do not have the worklogs of the day so the time of the
+    # demo/retro/planning is to be counted in the new sprint.
+    # This is compatible with some worklogs starting at 00:00:00: they will be included in the
+    # current sprint.
+    start_date = start_date.replace(hour=0, minute=0, second=0)
+    end_date = end_date.replace(hour=0, minute=0, second=0)
+    if args.allworklogs:
+        start_date = None
+        end_date = None
     create_summary(jiraobj, results, start_date, end_date)
 
 

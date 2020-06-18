@@ -8,9 +8,12 @@ This repository contains a set of tools useful for SCRUM masters:
 
 ## Tools
 
-### jisprint
+### jisprint/get-single-sprint
 
-Jisprint let's you extract sprint informations from JIRA, which is particularily useful for retrospectives.
+Jisprint get-single-sprint let's you extract sprint informations from JIRA, which is particularily useful for retrospectives.
+It displays the list of cards, with their spent time and number of storypoints.
+Only the worklogs started during the sprint span are considered.
+A sprint starts at 00:00:00 the day of the planning and finishes at 23:59:59 the day before the demo.
 
 - getting the sprint id
 
