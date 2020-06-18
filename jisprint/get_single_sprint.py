@@ -43,11 +43,11 @@ def get_time_spent_by_user(jiraobj, issue, since, until, by_user):
         started = dateutil.parser.parse(w.started)
         started = started.replace(tzinfo=None)  # trash timezone to be consistent
         if started > until or started < since:
-            skipped = skipped + spent
+            skipped += spent
             log.debug("----> skipped: %s %s on %s: %s", user, w.timeSpent, started, w.comment or "")
             continue
-        all_seconds = all_seconds + spent
-        count = count + spent
+        all_seconds += spent
+        count += spent
         by_user[user] = by_user.get(user, 0) + spent
         log.debug("-> %s %s on %s: %s", user, w.timeSpent, started, w.comment or "")
     return all_seconds, skipped
@@ -86,8 +86,8 @@ def create_summary(jiraobj, issues, start_date, end_date):
         time_spent, skipped_time_spent = get_time_spent_by_user(
             jiraobj, issue, start_date, end_date, time_spent_by_user
         )
-        all_timespent = all_timespent + time_spent
-        all_skipped_timespent = all_skipped_timespent + skipped_time_spent
+        all_timespent += time_spent
+        all_skipped_timespent += skipped_time_spent
         days_spent = round1(to_working_days(time_spent))
         formatted = "{category_key:5.5} {issuetype:5.5} {days_spent}d / {storypoints}sp {key} {summary}".format(
             category_key=category_key,
@@ -99,9 +99,9 @@ def create_summary(jiraobj, issues, start_date, end_date):
         )
         formatted_list.append(formatted)
         if category_key == "done":
-            done_sp = done_sp + storypoints
+            done_sp += storypoints
         else:
-            failed_sp = failed_sp + storypoints
+            failed_sp += storypoints
     formatted_list = sorted(formatted_list)
     print("\n".join(formatted_list))
     print("storypoints done: %d" % done_sp)
