@@ -27,9 +27,13 @@ Example:
 
 ```machine jira.camptocamp.com login YOUR_USERNANE password YOUR_PASSWORD```
 
+Install it (`$HOME/.local/bin/` should be in your `PATH`):
+
+```python3 -m pip install --user --editable=.```
+
 Exemple of call:
 
-```venv/bin/python jisprint/get_single_sprint.py jira.camptocamp.com 1128```
+```get-single-sprint 1128```
 
 
 ## Contributing
