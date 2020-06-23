@@ -166,7 +166,7 @@ def main():
     start_date = dateutil.parser.parse(sprint.startDate)
     end_date = dateutil.parser.parse(sprint.endDate)
     delta = (end_date - start_date).days
-    print("Sprint infos: %s %s" % (sprint.name, sprint.goal))
+    print("Sprint infos: %s %s %s" % (args.sprint, sprint.name, sprint.goal))
     print("{delta}d {start_date} -> {end_date}".format(delta=delta, start_date=start_date, end_date=end_date))
 
     # The start date is forced to be at 00:00:00, the sprints starts the day of the planning, at 00:00:00.
