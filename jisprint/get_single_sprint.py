@@ -57,6 +57,10 @@ def round1(value):
     return round(10 * value) / 10
 
 
+def round2(value):
+    return round(100 * value) / 100
+
+
 def round_object(obj, divisor=1):
     return {key: round1(value / divisor) for key, value in obj.items()}
 
@@ -71,6 +75,8 @@ def create_summary(jiraobj, issues, start_date, end_date):
     formatted_list = []
     all_timespent = 0
     all_skipped_timespent = 0
+    all_bugs_timespent = 0
+    all_other_timespent = 0
     time_spent_by_user = {}
     for issue in issues:
         fields = issue.fields
@@ -89,6 +95,10 @@ def create_summary(jiraobj, issues, start_date, end_date):
         all_timespent += time_spent
         all_skipped_timespent += skipped_time_spent
         days_spent = round1(to_working_days(time_spent))
+        if issuetype == "Bug":
+            all_bugs_timespent += time_spent
+        else:
+            all_other_timespent += time_spent
         formatted = "{category_key:5.5} {issuetype:5.5} {days_spent}d / {storypoints}sp {key} {summary}".format(
             category_key=category_key,
             issuetype=issuetype,
@@ -110,6 +120,10 @@ def create_summary(jiraobj, issues, start_date, end_date):
     print("storypoints failed: %d" % failed_sp)
     days_spent = to_working_days(all_timespent)
     print("days spent: %s" % round1(days_spent))
+    days_spent_on_bugs = to_working_days(all_bugs_timespent)
+    print("days spent on bugs: %s" % round1(days_spent_on_bugs))
+    bugs_ratio = 0 if all_timespent == 0 else round2(all_bugs_timespent / all_timespent)
+    print("bugs ratio: %s" % str(bugs_ratio))
     the_velocity = 0 if days_spent == 0 else round1(done_sp / days_spent)
     print("velocity: %s" % str(the_velocity))
     print("By user:")
