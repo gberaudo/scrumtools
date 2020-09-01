@@ -4,6 +4,8 @@ import logging
 import dateutil.parser
 from jira import JIRA
 
+import os.path
+
 log = logging.getLogger("tool")
 
 # See https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
@@ -16,6 +18,27 @@ def str2bool(v):
         return False
     raise argparse.ArgumentTypeError("Boolean value expected.")
 
+
+def guess_sprint_id_or_fail(jiraobj):
+    log.debug("Trying to guess the sprint id")
+    if not os.path.exists('.scrum'):
+        raise Exception("Could not guess the sprint id. No .scrum file found.")
+    with open(".scrum", "r") as f:
+        for line in f:
+            name, var = line.partition("=")[::2]
+            if name.strip() == 'board':
+                board_id = var.strip()
+                sprints = jiraobj.sprints(board_id)
+                for s in sprints:
+                    if s.state not in ("CLOSED", "FUTURE"):
+                        print("%s %s (%s)" % (s.name, s.id, s.state))
+                actives = [s for s in sprints if s.state == 'ACTIVE']
+                if len(actives) == 0:
+                    raise Exception("No active sprint in board %s" % board_id)
+                if len(actives) > 1:
+                    raise Exception("Several sprints are active in board %s: %s" % (board_id, [s.id for s in actives]))
+                return actives[0].id
+        raise Exception("No board id found in the .scrum file")
 
 userCache = {}
 
@@ -69,7 +92,7 @@ def to_working_days(seconds):
     return seconds / (8.4 * 3600)
 
 
-def create_summary(jiraobj, issues, start_date, end_date):
+def create_summary(jiraobj, issues, start_date, end_date, show_url):
     done_sp = 0
     failed_sp = 0
     formatted_list = []
@@ -84,8 +107,10 @@ def create_summary(jiraobj, issues, start_date, end_date):
         category_key = fields.status.statusCategory.key
         summary = fields.summary
         key = issue.key
-        if issuetype == "Sub-task":
-            key = fields.parent.key + "/" + key
+        # if issuetype == "Sub-task":
+        #     key = fields.parent.key + "/" + key
+        if show_url:
+            summary = '%s/browse/%s ' % (jiraobj.client_info(), key) + summary
         storypoints = getattr(fields, "customfield_10006", None) or 0
         # remaining = fields.timeestimate
         # not using fields.timespent since it may include worklogs outside the sprint time span
@@ -99,10 +124,10 @@ def create_summary(jiraobj, issues, start_date, end_date):
             all_bugs_timespent += time_spent
         else:
             all_other_timespent += time_spent
-        formatted = "{category_key:5.5} {issuetype:5.5} {days_spent}d / {storypoints}sp {key} {summary}".format(
+        formatted = "{category_key:5.5} {issuetype:5.5} {days_spent}d / {storypoints}sp {key}{summary}".format(
             category_key=category_key,
             issuetype=issuetype,
-            key=key,
+            key='' if show_url else key + ' ',
             summary=summary,
             storypoints=int(storypoints),
             days_spent=days_spent,
@@ -139,7 +164,8 @@ def main():
     logging.basicConfig()
 
     parser = argparse.ArgumentParser(description="JIRA spring summary tool")
-    parser.add_argument("sprint", type=int, help="the sprint id")
+    parser.add_argument("--sprint", type=int, default=0, help="the sprint id. ")
+    parser.add_argument("--urls", type=str2bool, nargs="?", const=True, help="Show urls", default=False)
     parser.add_argument("--host", type=str, default="jira.camptocamp.com", help="the JIRA server host")
     parser.add_argument(
         "--allworklogs", type=str2bool, nargs="?", const=True, help="Include all worklogs", default=False
@@ -157,16 +183,21 @@ def main():
 
     jiraobj = JIRA({"server": "https://" + args.host})
 
+    sprint_id = args.sprint
+    if sprint_id == 0:
+       sprint_id = guess_sprint_id_or_fail(jiraobj)
+
     jql = "Sprint = {sprint_id} AND issuetype in (Story, Bug, Task, subTaskIssueTypes())".format(
-        sprint_id=args.sprint
+        sprint_id=sprint_id
     )
 
     results = jiraobj.search_issues(jql)
-    sprint = jiraobj.sprint(args.sprint)
+    sprint = jiraobj.sprint(sprint_id)
     start_date = dateutil.parser.parse(sprint.startDate)
     end_date = dateutil.parser.parse(sprint.endDate)
     delta = (end_date - start_date).days
-    print("Sprint infos: %s %s %s" % (args.sprint, sprint.name, sprint.goal))
+    goal = sprint.goal if 'goal' in sprint.raw else ''
+    print("Sprint infos: %s %s %s" % (sprint_id, sprint.name, goal))
     print("{delta}d {start_date} -> {end_date}".format(delta=delta, start_date=start_date, end_date=end_date))
 
     # The start date is forced to be at 00:00:00, the sprints starts the day of the planning, at 00:00:00.
@@ -181,7 +212,7 @@ def main():
     if args.allworklogs:
         start_date = None
         end_date = None
-    create_summary(jiraobj, results, start_date, end_date)
+    create_summary(jiraobj, results, start_date, end_date, args.urls)
 
 
 if __name__ == "__main__":
