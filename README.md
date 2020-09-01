@@ -6,7 +6,50 @@
 This repository contains a set of tools useful for SCRUM masters:
 
 
+## Setup
+
+### Authentication
+
+Before running the tool, make sure your credentials are present in the [~/.netrc file](https://jira.readthedocs.io/en/master/examples.html#authentication).
+Example:
+
+```machine jira.camptocamp.com login YOUR_USERNANE password YOUR_PASSWORD```
+
+
+### Installation
+
+Install it (`$HOME/.local/bin/` should be in your `PATH`):
+
+```python3 -m pip install --user --editable=.```
+
+
 ## Tools
+
+### jisprint/get-board-sprints
+
+Jisprint get-board-sprints will list the sprints of the board, allowing you to quickly find sprint ids.
+For it to work you need to pass the board id.
+
+- getting the board id
+
+The board id is the parameter called `rapidview` in the sprint or report URLs.
+Example:
+`https://jira.camptocamp.com/secure/RapidBoard.jspa?rapidView=583`
+
+- usage
+
+```get-board-sprints --board 583```
+
+or, if you are using a `.scrum` file: ```get-board-sprints```
+
+
+### .scrum file
+
+A .scrum file is placed at the root of a project. It contains configuration, like this:
+
+```
+board=583
+```
 
 ### jisprint/get-single-sprint
 
@@ -23,21 +66,11 @@ Example:
 `https://jira.camptocamp.com/secure/RapidBoard.jspa?rapidView=583&projectKey=GSNGM&view=reporting&chart=sprintRetrospective&sprint=1128`
 => the sprint ID id 1128
 
-- setting authentication
-
-Before running the tool, make sure your credentials are present in the [~/.netrc file](https://jira.readthedocs.io/en/master/examples.html#authentication).
-Example:
-
-```machine jira.camptocamp.com login YOUR_USERNANE password YOUR_PASSWORD```
-
-Install it (`$HOME/.local/bin/` should be in your `PATH`):
-
-```python3 -m pip install --user --editable=.```
-
 Exemple of call:
 
-```get-single-sprint 1128```
+```get-single-sprint --sprint 1128```
 
+or, if you are using a `.scrum` file: ```get-single-sprint```
 
 ## Contributing
 
