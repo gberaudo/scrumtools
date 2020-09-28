@@ -1,10 +1,9 @@
 import argparse
 import logging
+import os.path
 
 import dateutil.parser
 from jira import JIRA
-
-import os.path
 
 log = logging.getLogger("tool")
 
@@ -21,24 +20,27 @@ def str2bool(v):
 
 def guess_sprint_id_or_fail(jiraobj):
     log.debug("Trying to guess the sprint id")
-    if not os.path.exists('.scrum'):
+    if not os.path.exists(".scrum"):
         raise Exception("Could not guess the sprint id. No .scrum file found.")
     with open(".scrum", "r") as f:
         for line in f:
             name, var = line.partition("=")[::2]
-            if name.strip() == 'board':
+            if name.strip() == "board":
                 board_id = var.strip()
                 sprints = jiraobj.sprints(board_id)
                 for s in sprints:
                     if s.state not in ("CLOSED", "FUTURE"):
                         print("%s %s (%s)" % (s.name, s.id, s.state))
-                actives = [s for s in sprints if s.state == 'ACTIVE']
+                actives = [s for s in sprints if s.state == "ACTIVE"]
                 if len(actives) == 0:
                     raise Exception("No active sprint in board %s" % board_id)
                 if len(actives) > 1:
-                    raise Exception("Several sprints are active in board %s: %s" % (board_id, [s.id for s in actives]))
+                    raise Exception(
+                        "Several sprints are active in board %s: %s" % (board_id, [s.id for s in actives])
+                    )
                 return actives[0].id
         raise Exception("No board id found in the .scrum file")
+
 
 userCache = {}
 
@@ -110,7 +112,7 @@ def create_summary(jiraobj, issues, start_date, end_date, show_url):
         # if issuetype == "Sub-task":
         #     key = fields.parent.key + "/" + key
         if show_url:
-            summary = '%s/browse/%s ' % (jiraobj.client_info(), key) + summary
+            summary = "%s/browse/%s " % (jiraobj.client_info(), key) + summary
         storypoints = getattr(fields, "customfield_10006", None) or 0
         # remaining = fields.timeestimate
         # not using fields.timespent since it may include worklogs outside the sprint time span
@@ -127,7 +129,7 @@ def create_summary(jiraobj, issues, start_date, end_date, show_url):
         formatted = "{category_key:5.5} {issuetype:5.5} {days_spent}d / {storypoints}sp {key}{summary}".format(
             category_key=category_key,
             issuetype=issuetype,
-            key='' if show_url else key + ' ',
+            key="" if show_url else key + " ",
             summary=summary,
             storypoints=int(storypoints),
             days_spent=days_spent,
@@ -185,7 +187,7 @@ def main():
 
     sprint_id = args.sprint
     if sprint_id == 0:
-       sprint_id = guess_sprint_id_or_fail(jiraobj)
+        sprint_id = guess_sprint_id_or_fail(jiraobj)
 
     jql = "Sprint = {sprint_id} AND issuetype in (Story, Bug, Task, subTaskIssueTypes())".format(
         sprint_id=sprint_id
@@ -196,7 +198,7 @@ def main():
     start_date = dateutil.parser.parse(sprint.startDate)
     end_date = dateutil.parser.parse(sprint.endDate)
     delta = (end_date - start_date).days
-    goal = sprint.goal if 'goal' in sprint.raw else ''
+    goal = sprint.goal if "goal" in sprint.raw else ""
     print("Sprint infos: %s %s %s" % (sprint_id, sprint.name, goal))
     print("{delta}d {start_date} -> {end_date}".format(delta=delta, start_date=start_date, end_date=end_date))
 
