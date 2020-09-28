@@ -126,13 +126,14 @@ def create_summary(jiraobj, issues, start_date, end_date, show_url):
             all_bugs_timespent += time_spent
         else:
             all_other_timespent += time_spent
-        formatted = "{category_key:5.5} {issuetype:5.5} {days_spent}d / {storypoints}sp {key}{summary}".format(
+        formatted = "{category_key:5.5} {issuetype:5.5} {days_spent}d /{storypoints:>2}sp {key:<11} {status:<16} {summary}".format(
             category_key=category_key,
             issuetype=issuetype,
             key="" if show_url else key + " ",
             summary=summary,
             storypoints=int(storypoints),
             days_spent=days_spent,
+            status=str(fields.status),
         )
         formatted_list.append(formatted)
         if category_key == "done":
