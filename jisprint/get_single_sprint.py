@@ -136,7 +136,9 @@ def create_summary(jiraobj, issues, start_date, end_date, show_url):
             status=str(fields.status),
         )
         formatted_list.append(formatted)
-        if category_key == "done":
+        if category_key == "indeterminate":
+            category_key = str(fields.status)
+        if category_key in ("done", "Internal review"):
             done_sp += storypoints
         else:
             failed_sp += storypoints
