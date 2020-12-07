@@ -20,7 +20,7 @@ Example:
 
 Install it (`$HOME/.local/bin/` should be in your `PATH`):
 
-```python3 -m pip install --user --editable=.```
+```python3 -m pip install --user --editable=. --no-use-pep517```
 
 
 ## Tools
