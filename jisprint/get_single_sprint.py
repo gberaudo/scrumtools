@@ -111,8 +111,6 @@ def create_summary(jiraobj, issues, start_date, end_date, show_url):
         key = issue.key
         # if issuetype == "Sub-task":
         #     key = fields.parent.key + "/" + key
-        if show_url:
-            summary = "%s/browse/%s " % (jiraobj.client_info(), key) + summary
         storypoints = getattr(fields, "customfield_10006", None) or 0
         # remaining = fields.timeestimate
         # not using fields.timespent since it may include worklogs outside the sprint time span
@@ -126,14 +124,13 @@ def create_summary(jiraobj, issues, start_date, end_date, show_url):
             all_bugs_timespent += time_spent
         else:
             all_other_timespent += time_spent
-        formatted = "{category_key:5.5} {issuetype:5.5} {days_spent}d /{storypoints:>2}sp {key:<11} {status:<16} {summary}".format(
-            category_key=category_key,
+        formatted = "{status:6} {issuetype:5.5} {days_spent}d /{storypoints:>2}sp {key} {summary}".format(
             issuetype=issuetype,
-            key="" if show_url else key + " ",
+            key="%s/browse/%s" % (jiraobj.client_info(), key) if show_url else key,
             summary=summary,
             storypoints=int(storypoints),
             days_spent=days_spent,
-            status=str(fields.status),
+            status=str(fields.status)[0:6],
         )
         formatted_list.append(formatted)
         if category_key == "indeterminate":
