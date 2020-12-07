@@ -20,7 +20,9 @@ Example:
 
 Install it (`$HOME/.local/bin/` should be in your `PATH`):
 
-```python3 -m pip install --user --editable=. --no-use-pep517```
+```
+python3 -m pip install --user --editable=. --no-use-pep517
+```
 
 
 ## Tools
@@ -71,6 +73,17 @@ Exemple of call:
 ```get-single-sprint --sprint 1128```
 
 or, if you are using a `.scrum` file: ```get-single-sprint```
+
+
+### jisprint/get-epic-info
+
+Jisprint get-epic-info let's you get infos from a JIRA epic. It displays information about cards sharing a particular epic.
+It is placed in the jisprint directory for convenience.
+
+Example:
+
+get-epic-info GSDESCARTE-2
+
 
 ## Contributing
 
