@@ -1,10 +1,8 @@
 # Tools for Scrum Masters
 
-
 ## Description
 
 This repository contains a set of tools useful for SCRUM masters:
-
 
 ## Setup
 
@@ -15,13 +13,13 @@ Example:
 
 ```machine jira.camptocamp.com login YOUR_USERNANE password YOUR_PASSWORD```
 
-
 ### Installation
 
 Install it (`$HOME/.local/bin/` should be in your `PATH`):
 
-```python3 -m pip install --user --editable=. --no-use-pep517```
-
+```bash
+python3 -m pip install --user --editable=. --no-use-pep517
+```
 
 ## Tools
 
@@ -47,7 +45,7 @@ or, if you are using a `.scrum` file: ```get-board-sprints```
 
 A .scrum file is placed at the root of a project. It contains configuration, like this:
 
-```
+```ini
 board=583
 ```
 
@@ -72,11 +70,28 @@ Exemple of call:
 
 or, if you are using a `.scrum` file: ```get-single-sprint```
 
+### jisprint/get-epic-info
+
+Jisprint get-epic-info let's you get infos from a JIRA epic. It displays information about cards sharing a particular epic.
+It is placed in the jisprint directory for convenience.
+
+Example:
+
+get-epic-info GSDESCARTE-2
+
+### jisprint/get-project-info
+
+Jisprint get-project-info let's you get infos from a JIRA project. It displays information about cards parts of a particular project.
+It is placed in the jisprint directory for convenience.
+
+Example:
+
+get-project-info MY_SUPER_PROJECT
+
 ## Contributing
 
 Let's discuss new ideas and improvements together, in real life.
 
-
-# Origin
+## Origin
 
 These tools where originally written by Guillaume Beraudo.
