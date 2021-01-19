@@ -62,6 +62,8 @@ def get_time_spent_by_user(jiraobj, issue, since, until, by_user):
     log.debug("Getting worklog of issue %s: %s", issue.key, issue.fields.summary)
     count = 0
     skipped = 0
+    kept_worklogs = []
+    by_user_for_issue = {}
     for w in worklogs:
         spent = w.timeSpentSeconds
         user = get_user(jiraobj, w.author.key)
@@ -72,10 +74,15 @@ def get_time_spent_by_user(jiraobj, issue, since, until, by_user):
             skipped += spent
             continue
         all_seconds += spent
-        count += spent
+        kept_worklogs.append({
+            'user': user,
+            'spent': spent,
+            'raw': w
+        })
         by_user[user] = by_user.get(user, 0) + spent
+        by_user_for_issue[user] = by_user_for_issue.get(user, 0) + spent
         log.debug("-> %s %s on %s: %s", user, w.timeSpent, started, w.comment or "")
-    return all_seconds, skipped
+    return all_seconds, skipped, kept_worklogs, by_user_for_issue
 
 
 def round1(value):
@@ -101,12 +108,25 @@ def merge_subtasks(items):
         if item['issuetype'] == "Sub-task":
             parent = index[item['parent'].key]
             parent['days_spent'] += item['days_spent']
+            parent['work_items'] += item['work_items']
         else:
             merged.append(item)
     return merged
 
 
-def create_summary(jiraobj, issues, start_date, end_date, show_url, merged_subtasks=False):
+def format_spent_by_user(by_user, minimum=0.15):
+    worked = [
+        '%s: %sd' % (user, round1(to_working_days(spent)))
+        for user, spent in by_user.items() if round1(to_working_days(spent)) > minimum
+    ]
+    joiner = '\n   '
+    if len(worked) > 0:
+        return joiner + joiner.join(worked)
+    else:
+        return ''
+
+
+def create_summary(jiraobj, issues, start_date, end_date, show_url, merged_subtasks=False, worked_on=False):
     done_sp = 0
     failed_sp = 0
     formatted_list = []
@@ -130,7 +150,7 @@ def create_summary(jiraobj, issues, start_date, end_date, show_url, merged_subta
         storypoints = getattr(fields, "customfield_10006", None) or 0
         # remaining = fields.timeestimate
         # not using fields.timespent since it may include worklogs outside the sprint time span
-        time_spent, skipped_time_spent = get_time_spent_by_user(
+        time_spent, skipped_time_spent, work_items, by_user_for_issue = get_time_spent_by_user(
             jiraobj, issue, start_date, end_date, time_spent_by_user
         )
         all_timespent += time_spent
@@ -149,7 +169,10 @@ def create_summary(jiraobj, issues, start_date, end_date, show_url, merged_subta
             'storypoints': int(storypoints),
             'days_spent': days_spent,
             'status': str(fields.status),
-            'parent': fields.parent if issuetype == "Sub-task" else None
+            'parent': fields.parent if issuetype == "Sub-task" else None,
+            'raw': issue,
+            'work_items': work_items,
+            'by_user': by_user_for_issue,
         })
         if category_key == "indeterminate":
             category_key = str(fields.status)
@@ -161,7 +184,8 @@ def create_summary(jiraobj, issues, start_date, end_date, show_url, merged_subta
     if merged_subtasks:
         items = merge_subtasks(items)
     for item in items:
-        formatted = "{category_key:5.5} {issuetype:5.5} {days_spent}d /{storypoints:>2}sp {key_or_url:<11} {status:<16} {summary}".format(**item)
+        worked = format_spent_by_user(item['by_user'], 0.15) if worked_on else ''
+        formatted = "{category_key:5.5} {issuetype:5.5} {days_spent}d /{storypoints:>2}sp {key_or_url:<11} {status:<16} {summary} {worked}".format(worked=worked, **item)
         formatted_list.append(formatted)
 
     formatted_list = sorted(formatted_list)
