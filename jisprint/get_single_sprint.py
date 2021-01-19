@@ -16,6 +16,7 @@ def main():
     parser = argparse.ArgumentParser(description="JIRA spring summary tool")
     parser.add_argument("--sprint", type=int, default=0, help="the sprint id. ")
     parser.add_argument("--urls", type=str2bool, nargs="?", const=True, help="Show urls", default=False)
+    parser.add_argument("--subtasks", type=str2bool, nargs="?", const=True, help="Do not merge subtasks in their parent", default=False)
     parser.add_argument("--host", type=str, default="jira.camptocamp.com", help="the JIRA server host")
     parser.add_argument(
         "--allworklogs", type=str2bool, nargs="?", const=True, help="Include all worklogs", default=False
@@ -62,7 +63,7 @@ def main():
     if args.allworklogs:
         start_date = None
         end_date = None
-    create_summary(jiraobj, results, start_date, end_date, args.urls)
+    create_summary(jiraobj, results, start_date, end_date, args.urls, not args.subtasks)
 
 
 if __name__ == "__main__":

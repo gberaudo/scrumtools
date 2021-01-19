@@ -94,7 +94,19 @@ def to_working_days(seconds):
     return seconds / (8.4 * 3600)
 
 
-def create_summary(jiraobj, issues, start_date, end_date, show_url):
+def merge_subtasks(items):
+    merged = []
+    index = {item['key']: item for item in items}
+    for item in items:
+        if item['issuetype'] == "Sub-task":
+            parent = index[item['parent'].key]
+            parent['days_spent'] += item['days_spent']
+        else:
+            merged.append(item)
+    return merged
+
+
+def create_summary(jiraobj, issues, start_date, end_date, show_url, merged_subtasks=False):
     done_sp = 0
     failed_sp = 0
     formatted_list = []
@@ -103,6 +115,8 @@ def create_summary(jiraobj, issues, start_date, end_date, show_url):
     all_bugs_timespent = 0
     all_other_timespent = 0
     time_spent_by_user = {}
+    items = []
+
     for issue in issues:
         fields = issue.fields
         issuetype = fields.issuetype.name
@@ -126,22 +140,30 @@ def create_summary(jiraobj, issues, start_date, end_date, show_url):
             all_bugs_timespent += time_spent
         else:
             all_other_timespent += time_spent
-        formatted = "{category_key:5.5} {issuetype:5.5} {days_spent}d /{storypoints:>2}sp {key:<11} {status:<16} {summary}".format(
-            category_key=category_key,
-            issuetype=issuetype,
-            key="" if show_url else key + " ",
-            summary=summary,
-            storypoints=int(storypoints),
-            days_spent=days_spent,
-            status=str(fields.status),
-        )
-        formatted_list.append(formatted)
+        items.append({
+            'category_key': category_key,
+            'issuetype': issuetype,
+            'key': key,
+            'key_or_url': "" if show_url else key + " ",
+            'summary': summary,
+            'storypoints': int(storypoints),
+            'days_spent': days_spent,
+            'status': str(fields.status),
+            'parent': fields.parent if issuetype == "Sub-task" else None
+        })
         if category_key == "indeterminate":
             category_key = str(fields.status)
         if category_key in ("done", "Internal review"):
             done_sp += storypoints
         else:
             failed_sp += storypoints
+
+    if merged_subtasks:
+        items = merge_subtasks(items)
+    for item in items:
+        formatted = "{category_key:5.5} {issuetype:5.5} {days_spent}d /{storypoints:>2}sp {key_or_url:<11} {status:<16} {summary}".format(**item)
+        formatted_list.append(formatted)
+
     formatted_list = sorted(formatted_list)
     print("\n".join(formatted_list))
     print("sprint start: %s (including)" % start_date)
