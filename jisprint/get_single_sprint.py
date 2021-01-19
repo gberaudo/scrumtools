@@ -25,6 +25,9 @@ def main():
     parser.add_argument(
         "--debug", type=str2bool, nargs="?", const=True, help="be more verbose", default=False
     )
+    parser.add_argument(
+        "--retro", type=str2bool, nargs="?", const=True, help="Generate a retrospective template", default=False
+    )
 
     args = parser.parse_args()
 
@@ -65,6 +68,28 @@ def main():
         start_date = None
         end_date = None
     create_summary(jiraobj, results, start_date, end_date, args.urls, not args.subtasks, args.workedon)
+
+    if args.retro:
+        template = """
+Production
+
+Announces
+
+Improving actions review
+
+Feedback
+    client:
+    Product Owner:
+    devs:
+    Scrum Master:
+
+Improving actions
+
+当番 (toban: person on duty)
+Daily:
+Review:
+Planning:"""
+        print(template)
 
 
 if __name__ == "__main__":
