@@ -1,11 +1,12 @@
 import argparse
 import logging
 import os.path
+import os
 
 import dateutil.parser
 from jira import JIRA
 
-from .util import str2bool, guess_sprint_id_or_fail, create_summary
+from .util import str2bool, guess_sprint_id_or_fail, create_summary, read_board_from_config
 
 log = logging.getLogger("tool")
 
@@ -14,6 +15,7 @@ def main():
     logging.basicConfig()
 
     parser = argparse.ArgumentParser(description="JIRA spring summary tool")
+    parser.add_argument('--backlog', type=str2bool, nargs="?", const=True, help="Open backlog", default=False)
     parser.add_argument("--sprint", type=int, default=0, help="the sprint id. ")
     parser.add_argument("--urls", type=str2bool, nargs="?", const=True, help="Show urls", default=False)
     parser.add_argument("--subtasks", type=str2bool, nargs="?", const=True, help="Do not merge subtasks in their parent", default=False)
@@ -30,6 +32,11 @@ def main():
     )
 
     args = parser.parse_args()
+
+    if args.backlog:
+        board = read_board_from_config()
+        os.system(f'browse "https://jira.camptocamp.com/secure/RapidBoard.jspa?rapidView={board}&view=planning.nodetail&issueLimit=100"')
+        return
 
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)

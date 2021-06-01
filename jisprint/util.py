@@ -18,28 +18,32 @@ def str2bool(v):
     raise argparse.ArgumentTypeError("Boolean value expected.")
 
 
-def guess_sprint_id_or_fail(jiraobj):
-    log.debug("Trying to guess the sprint id")
+def read_board_from_config():
     if not os.path.exists(".scrum"):
         raise Exception("Could not guess the sprint id. No .scrum file found.")
     with open(".scrum", "r") as f:
         for line in f:
             name, var = line.partition("=")[::2]
             if name.strip() == "board":
-                board_id = var.strip()
-                sprints = jiraobj.sprints(board_id)
-                for s in sprints:
-                    if s.state not in ("CLOSED", "FUTURE"):
-                        print("%s %s (%s)" % (s.name, s.id, s.state))
-                actives = [s for s in sprints if s.state == "ACTIVE"]
-                if len(actives) == 0:
-                    raise Exception("No active sprint in board %s" % board_id)
-                if len(actives) > 1:
-                    raise Exception(
-                        "Several sprints are active in board %s: %s" % (board_id, [s.id for s in actives])
-                    )
-                return actives[0].id
-        raise Exception("No board id found in the .scrum file")
+                return var.strip()
+    raise Exception("No board id found in the .scrum file")
+
+
+def guess_sprint_id_or_fail(jiraobj):
+    log.debug("Trying to guess the sprint id")
+    board_id = read_board_from_config()
+    sprints = jiraobj.sprints(board_id)
+    for s in sprints:
+        if s.state not in ("CLOSED", "FUTURE"):
+            print("%s %s (%s)" % (s.name, s.id, s.state))
+    actives = [s for s in sprints if s.state == "ACTIVE"]
+    if len(actives) == 0:
+        raise Exception("No active sprint in board %s" % board_id)
+    if len(actives) > 1:
+        raise Exception(
+            "Several sprints are active in board %s: %s" % (board_id, [s.id for s in actives])
+        )
+    return actives[0].id
 
 
 userCache = {}
