@@ -25,6 +25,9 @@ def main():
         "--allworklogs", type=str2bool, nargs="?", const=True, help="Include all worklogs", default=False
     )
     parser.add_argument(
+        "--sinceworklogs", type=str2bool, nargs="?", const=True, help="Include worklogs since start of sprint", default=False
+    )
+    parser.add_argument(
         "--debug", type=str2bool, nargs="?", const=True, help="be more verbose", default=False
     )
     parser.add_argument(
@@ -73,6 +76,8 @@ def main():
     end_date = end_date.replace(hour=0, minute=0, second=0)
     if args.allworklogs:
         start_date = None
+        end_date = None
+    if args.sinceworklogs:
         end_date = None
     create_summary(jiraobj, results, start_date, end_date, args.urls, not args.subtasks, args.workedon)
 
