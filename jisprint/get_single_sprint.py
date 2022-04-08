@@ -3,6 +3,7 @@ import logging
 import os.path
 import os
 
+import datetime
 import dateutil.parser
 from jira import JIRA
 
@@ -25,7 +26,10 @@ def main():
         "--allworklogs", type=str2bool, nargs="?", const=True, help="Include all worklogs", default=False
     )
     parser.add_argument(
-        "--sinceworklogs", type=str2bool, nargs="?", const=True, help="Include worklogs since start of sprint", default=False
+        "--overdue", type=str2bool, nargs="?", const=True, help="Include worklogs since start of sprint", default=False
+    )
+    parser.add_argument(
+        "--recent", type=str2bool, nargs="?", const=True, help="Include only recent worklogs", default=False
     )
     parser.add_argument(
         "--debug", type=str2bool, nargs="?", const=True, help="be more verbose", default=False
@@ -74,10 +78,14 @@ def main():
     # current sprint.
     start_date = start_date.replace(hour=0, minute=0, second=0)
     end_date = end_date.replace(hour=0, minute=0, second=0)
+    if args.recent:
+        td = datetime.timedelta(15)
+        now = datetime.datetime.now()
+        start_date = now - td
     if args.allworklogs:
         start_date = None
         end_date = None
-    if args.sinceworklogs:
+    if args.overdue:
         end_date = None
     create_summary(jiraobj, results, start_date, end_date, args.urls, not args.subtasks, args.workedon)
 
