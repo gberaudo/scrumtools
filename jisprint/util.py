@@ -32,11 +32,7 @@ def read_board_from_config():
 def guess_sprint_id_or_fail(jiraobj):
     log.debug("Trying to guess the sprint id")
     board_id = read_board_from_config()
-    sprints = jiraobj.sprints(board_id)
-    for s in sprints:
-        if s.state not in ("CLOSED", "FUTURE"):
-            print("%s %s (%s)" % (s.name, s.id, s.state))
-    actives = [s for s in sprints if s.state == "ACTIVE"]
+    actives = jiraobj.sprints(board_id, state="active")
     if len(actives) == 0:
         raise Exception("No active sprint in board %s" % board_id)
     if len(actives) > 1:
@@ -62,7 +58,6 @@ def get_time_spent_by_user(jiraobj, issue, since, until, by_user):
     all_seconds = 0
     worklogs = jiraobj.worklogs(issue.id)
     log.debug("Getting worklog of issue %s: %s", issue.key, issue.fields.summary)
-    count = 0
     skipped = 0
     kept_worklogs = []
     by_user_for_issue = {}
@@ -71,7 +66,11 @@ def get_time_spent_by_user(jiraobj, issue, since, until, by_user):
         user = get_user(jiraobj, w.author.key)
         started = dateutil.parser.parse(w.started)
         started = started.replace(tzinfo=None)  # trash timezone to be consistent
-        if since is not None and until is not None and (started < since or started >= until):
+        if (
+            since is not None
+            and until is not None
+            and (started.timestamp() < since.timestamp() or started.timestamp() >= until.timestamp())
+        ):
             log.debug("----> skipped: %s %s on %s: %s", user, w.timeSpent, started, w.comment or "")
             skipped += spent
             continue
