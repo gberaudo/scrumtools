@@ -40,9 +40,7 @@ def guess_sprint_id_or_fail(jiraobj):
     if len(actives) == 0:
         raise Exception("No active sprint in board %s" % board_id)
     if len(actives) > 1:
-        raise Exception(
-            "Several sprints are active in board %s: %s" % (board_id, [s.id for s in actives])
-        )
+        raise Exception("Several sprints are active in board %s: %s" % (board_id, [s.id for s in actives]))
     return actives[0].id
 
 
@@ -78,11 +76,7 @@ def get_time_spent_by_user(jiraobj, issue, since, until, by_user):
             skipped += spent
             continue
         all_seconds += spent
-        kept_worklogs.append({
-            'user': user,
-            'spent': spent,
-            'raw': w
-        })
+        kept_worklogs.append({"user": user, "spent": spent, "raw": w})
         by_user[user] = by_user.get(user, 0) + spent
         by_user_for_issue[user] = by_user_for_issue.get(user, 0) + spent
         log.debug("-> %s %s on %s: %s", user, w.timeSpent, started, w.comment or "")
@@ -107,12 +101,12 @@ def to_working_days(seconds):
 
 def merge_subtasks(items):
     merged = []
-    index = {item['key']: item for item in items}
+    index = {item["key"]: item for item in items}
     for item in items:
-        if item['issuetype'] == "Sub-task":
-            parent = index[item['parent'].key]
-            parent['days_spent'] += item['days_spent']
-            parent['work_items'] += item['work_items']
+        if item["issuetype"] == "Sub-task":
+            parent = index[item["parent"].key]
+            parent["days_spent"] += item["days_spent"]
+            parent["work_items"] += item["work_items"]
         else:
             merged.append(item)
     return merged
@@ -120,14 +114,15 @@ def merge_subtasks(items):
 
 def format_spent_by_user(by_user, minimum=0.15):
     worked = [
-        '%s: %sd' % (user, round1(to_working_days(spent)))
-        for user, spent in by_user.items() if round1(to_working_days(spent)) > minimum
+        "%s: %sd" % (user, round1(to_working_days(spent)))
+        for user, spent in by_user.items()
+        if round1(to_working_days(spent)) > minimum
     ]
-    joiner = '\n   '
+    joiner = "\n   "
     if len(worked) > 0:
         return joiner + joiner.join(worked)
     else:
-        return ''
+        return ""
 
 
 def create_summary(jiraobj, issues, start_date, end_date, show_url, merged_subtasks=False, worked_on=False):
@@ -164,20 +159,22 @@ def create_summary(jiraobj, issues, start_date, end_date, show_url, merged_subta
             all_bugs_timespent += time_spent
         else:
             all_other_timespent += time_spent
-        items.append({
-            'category_key': category_key,
-            'issuetype': issuetype,
-            'key': key,
-            'key_or_url': "" if show_url else key + " ",
-            'summary': summary,
-            'storypoints': int(storypoints),
-            'days_spent': days_spent,
-            'status': str(fields.status),
-            'parent': fields.parent if issuetype == "Sub-task" else None,
-            'raw': issue,
-            'work_items': work_items,
-            'by_user': by_user_for_issue,
-        })
+        items.append(
+            {
+                "category_key": category_key,
+                "issuetype": issuetype,
+                "key": key,
+                "key_or_url": "" if show_url else key + " ",
+                "summary": summary,
+                "storypoints": int(storypoints),
+                "days_spent": days_spent,
+                "status": str(fields.status),
+                "parent": fields.parent if issuetype == "Sub-task" else None,
+                "raw": issue,
+                "work_items": work_items,
+                "by_user": by_user_for_issue,
+            }
+        )
         if category_key == "indeterminate":
             category_key = str(fields.status)
         if category_key in ("done", "Internal review"):
@@ -188,8 +185,10 @@ def create_summary(jiraobj, issues, start_date, end_date, show_url, merged_subta
     if merged_subtasks:
         items = merge_subtasks(items)
     for item in items:
-        worked = format_spent_by_user(item['by_user'], 0.15) if worked_on else ''
-        formatted = "{category_key:5.5} {issuetype:5.5} {days_spent}d /{storypoints:>2}sp {key_or_url:<11} {status:<16} {summary} {worked}".format(worked=worked, **item)
+        worked = format_spent_by_user(item["by_user"], 0.15) if worked_on else ""
+        formatted = "{category_key:5.5} {issuetype:5.5} {days_spent}d /{storypoints:>2}sp {key_or_url:<11} {status:<16} {summary} {worked}".format(
+            worked=worked, **item
+        )
         formatted_list.append(formatted)
 
     formatted_list = sorted(formatted_list)
