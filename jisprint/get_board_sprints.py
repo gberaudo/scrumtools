@@ -33,10 +33,10 @@ def main():
     if board_id == 0:
         board_id = guess_board_id(jiraobj)
 
-    sprints = jiraobj.sprints(board_id)
+    # using maxResults=0 enters the batch mode which will fetch all results
+    sprints = jiraobj.sprints(board_id, maxResults=0, state="active,closed")
     for s in sprints:
-        if s.state not in ("FUTURE"):
-            print("%s %s (%s)" % (s.name, s.id, s.state))
+        print(f"{s.name} {s.id} ({s.state})")
 
 
 if __name__ == "__main__":
