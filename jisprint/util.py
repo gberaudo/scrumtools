@@ -1,9 +1,11 @@
 import argparse
 import logging
 import os.path
+from pathlib import Path
 
 import dateutil.parser
 from jira import JIRA
+from typing import Optional
 
 log = logging.getLogger("tool")
 
@@ -18,10 +20,21 @@ def str2bool(v):
     raise argparse.ArgumentTypeError("Boolean value expected.")
 
 
-def read_board_from_config():
-    if not os.path.exists(".scrum"):
-        raise Exception("Could not guess the sprint id. No .scrum file found.")
-    with open(".scrum", "r") as f:
+def find_scrum_file() -> Optional[Path]:
+    dir = Path.cwd()
+    while (dir.root != dir):
+        scrum_path = dir.with_name('.scrum')
+        if scrum_path.exists():
+            return scrum_path
+        dir = dir.parent
+    print("No .scrum file found.")
+
+
+def read_board_from_scrum_file():
+    scrum_file = find_scrum_file()
+    if not scrum_file:
+        raise Exception("Could not guess the sprint id.")
+    with scrum_file.open("r") as f:
         for line in f:
             name, var = line.partition("=")[::2]
             if name.strip() == "board":
@@ -31,7 +44,7 @@ def read_board_from_config():
 
 def guess_sprint_id_or_fail(jiraobj):
     log.debug("Trying to guess the sprint id")
-    board_id = read_board_from_config()
+    board_id = read_board_from_scrum_file()
     actives = jiraobj.sprints(board_id, state="active")
     if len(actives) == 0:
         raise Exception("No active sprint in board %s" % board_id)

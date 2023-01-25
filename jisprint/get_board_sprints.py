@@ -3,19 +3,9 @@ import logging
 
 import dateutil.parser
 from jira import JIRA
+from util import read_board_from_scrum_file
 
 import os.path
-
-
-def guess_board_id(jiraobj):
-    if not os.path.exists(".scrum"):
-        raise Exception("Could not guess the sprint id. No .scrum file found.")
-    with open(".scrum", "r") as f:
-        for line in f:
-            name, var = line.partition("=")[::2]
-            if name.strip() == "board":
-                return var.strip()
-        raise Exception("No board id found in the .scrum file")
 
 
 def main():
@@ -31,7 +21,7 @@ def main():
 
     board_id = args.board
     if board_id == 0:
-        board_id = guess_board_id(jiraobj)
+        board_id = read_board_from_scrum_file(jiraobj)
 
     # using maxResults=0 enters the batch mode which will fetch all results
     sprints = jiraobj.sprints(board_id, maxResults=0, state="active,closed")

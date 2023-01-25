@@ -7,7 +7,7 @@ import datetime
 import dateutil.parser
 from jira import JIRA
 
-from .util import str2bool, guess_sprint_id_or_fail, create_summary, read_board_from_config
+from .util import str2bool, guess_sprint_id_or_fail, create_summary, read_board_from_scrum_file
 
 log = logging.getLogger("tool")
 
@@ -41,7 +41,7 @@ def main():
     args = parser.parse_args()
 
     if args.backlog:
-        board = read_board_from_config()
+        board = read_board_from_scrum_file()
         os.system(f'browse "https://jira.camptocamp.com/secure/RapidBoard.jspa?rapidView={board}&view=planning.nodetail&issueLimit=100"')
         return
 
