@@ -23,7 +23,7 @@ def str2bool(v):
 def find_scrum_file() -> Optional[Path]:
     dir = Path.cwd()
     while (dir.root != dir):
-        scrum_path = dir.with_name('.scrum')
+        scrum_path = dir.joinpath('.scrum')
         if scrum_path.exists():
             return scrum_path
         dir = dir.parent
