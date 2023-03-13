@@ -60,7 +60,16 @@ def main():
         sprint_id=sprint_id
     )
 
-    results = jiraobj.search_issues(jql)
+    results = []
+    prc = 0
+    # FIXME: poor man all results iteration, I would expect the lib to do that for me...
+    while True:
+        partial_results = jiraobj.search_issues(jql, startAt=prc, maxResults=50)
+        results.extend(partial_results)
+        prc += len(partial_results)
+        if prc == partial_results.total:
+            break
+
     sprint = jiraobj.sprint(sprint_id)
     start_date = dateutil.parser.parse(sprint.startDate)
     end_date = dateutil.parser.parse(sprint.endDate)
