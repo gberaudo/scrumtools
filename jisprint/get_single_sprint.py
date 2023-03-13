@@ -113,20 +113,6 @@ Feedback
     Scrum Master:
 
 Technical corner
-- specs:
-  - Were they specified fully / Did I adapt something?
-- review:
-  - Interesting bits I have learnt this sprint
-  - Is the existing code good or hacky? Is it going in the right direction?
-  - Could we have saved time doing things differently?
-- dependent teams (infra, design, ...):
-  - Was collaboration good?
-  - Was I blocked waiting for something?
-  - Could the work done by dependent team be improved?
-- debt evolution:
-  - new debt:
-  - reduced debt:
-  - resolved debt:
 
 Improving actions review
 
