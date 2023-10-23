@@ -3,7 +3,7 @@ import logging
 
 import dateutil.parser
 from jira import JIRA
-from util import read_board_from_scrum_file
+from .util import read_board_from_scrum_file
 
 import os.path
 
@@ -21,7 +21,7 @@ def main():
 
     board_id = args.board
     if board_id == 0:
-        board_id = read_board_from_scrum_file(jiraobj)
+        board_id = read_board_from_scrum_file()
 
     # using maxResults=0 enters the batch mode which will fetch all results
     sprints = jiraobj.sprints(board_id, maxResults=0, state="active,closed")
