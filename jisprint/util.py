@@ -30,7 +30,7 @@ def find_scrum_file() -> Optional[Path]:
     print("No .scrum file found.")
 
 
-def read_board_from_scrum_file():
+def read_board_from_scrum_file() -> str:
     scrum_file = find_scrum_file()
     if not scrum_file:
         raise Exception("Could not guess the sprint id.")
@@ -40,6 +40,19 @@ def read_board_from_scrum_file():
             if name.strip() == "board":
                 return var.strip()
     raise Exception("No board id found in the .scrum file")
+
+
+def read_project_from_scrum_file() -> Optional[str]:
+    scrum_file = find_scrum_file()
+    if not scrum_file:
+        return None
+    with scrum_file.open("r") as f:
+        for line in f:
+            name, var = line.partition("=")[::2]
+            if name.strip() == "project":
+                return var.strip()
+    return None
+
 
 
 def guess_sprint_id_or_fail(jiraobj):

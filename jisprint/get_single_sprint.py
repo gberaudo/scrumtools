@@ -7,7 +7,7 @@ import datetime
 import dateutil.parser
 from jira import JIRA
 
-from .util import str2bool, guess_sprint_id_or_fail, create_summary, read_board_from_scrum_file
+from .util import read_project_from_scrum_file, str2bool, guess_sprint_id_or_fail, create_summary, read_board_from_scrum_file
 
 log = logging.getLogger("tool")
 
@@ -18,6 +18,7 @@ def main():
     parser = argparse.ArgumentParser(description="JIRA spring summary tool")
     parser.add_argument('--backlog', type=str2bool, nargs="?", const=True, help="Open backlog", default=False)
     parser.add_argument("--sprint", type=int, default=0, help="the sprint id. ")
+    parser.add_argument("--project", type=str, help="the project name or 'all'.")
     parser.add_argument("--urls", type=str2bool, nargs="?", const=True, help="Show urls", default=False)
     parser.add_argument("--subtasks", type=str2bool, nargs="?", const=True, help="Do not merge subtasks in their parent", default=False)
     parser.add_argument("--workedon", type=str2bool, nargs="?", const=True, help="Show who worked on what", default=False)
@@ -56,9 +57,16 @@ def main():
     if sprint_id == 0:
         sprint_id = guess_sprint_id_or_fail(jiraobj)
 
-    jql = "Sprint = {sprint_id} AND issuetype in (Story, Bug, Task, subTaskIssueTypes())".format(
-        sprint_id=sprint_id
-    )
+    project = args.project
+    if project == 'all':
+        project = None
+    else:
+        if project is None:
+            project = read_project_from_scrum_file()
+
+    jql = f"Sprint = {sprint_id} AND issuetype in (Story, Bug, Task, subTaskIssueTypes())"
+    if project:
+        jql = f"project = {project} AND {jql}"
 
     results = []
     prc = 0
