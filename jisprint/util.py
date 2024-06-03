@@ -1,6 +1,6 @@
 import argparse
 import logging
-import os.path
+import os
 from pathlib import Path
 
 import dateutil.parser
@@ -8,6 +8,13 @@ from jira import JIRA
 from typing import Optional
 
 log = logging.getLogger("tool")
+
+
+def get_jiraobj(host: str = "camptocamp.atlassian.net"):
+    JIRA_USER = os.environ.get("JIRA_USER")
+    JIRA_API_TOKEN = os.environ.get("JIRA_API_TOKEN")
+    return JIRA(basic_auth=(JIRA_USER, JIRA_API_TOKEN), server=f"https://{host}")
+
 
 # See https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
 def str2bool(v):
@@ -89,7 +96,7 @@ def get_time_spent_by_user(jiraobj, issue, since, until, by_user):
     by_user_for_issue = {}
     for w in worklogs:
         spent = w.timeSpentSeconds
-        user = get_user(jiraobj, w.author.key)
+        user = get_user(jiraobj, w.author.displayName)
         started = dateutil.parser.parse(w.started)
         started = started.replace(tzinfo=None)  # trash timezone to be consistent
         if (

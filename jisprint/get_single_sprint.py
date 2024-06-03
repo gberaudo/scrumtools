@@ -5,12 +5,10 @@ import os
 
 import datetime
 import dateutil.parser
-from jira import JIRA
 
-from .util import read_project_from_scrum_file, str2bool, guess_sprint_id_or_fail, create_summary, read_board_from_scrum_file
+from .util import get_jiraobj, read_project_from_scrum_file, str2bool, guess_sprint_id_or_fail, create_summary, read_board_from_scrum_file
 
 log = logging.getLogger("tool")
-
 
 def main():
     logging.basicConfig()
@@ -22,7 +20,7 @@ def main():
     parser.add_argument("--urls", type=str2bool, nargs="?", const=True, help="Show urls", default=False)
     parser.add_argument("--subtasks", type=str2bool, nargs="?", const=True, help="Do not merge subtasks in their parent", default=False)
     parser.add_argument("--workedon", type=str2bool, nargs="?", const=True, help="Show who worked on what", default=False)
-    parser.add_argument("--host", type=str, default="jira.camptocamp.com", help="the JIRA server host")
+    parser.add_argument("--host", type=str, default="camptocamp.atlassian.net", help="the JIRA server host")
     parser.add_argument(
         "--allworklogs", type=str2bool, nargs="?", const=True, help="Include all worklogs", default=False
     )
@@ -43,7 +41,7 @@ def main():
 
     if args.backlog:
         board = read_board_from_scrum_file()
-        os.system(f'browse "https://jira.camptocamp.com/secure/RapidBoard.jspa?rapidView={board}&view=planning.nodetail&issueLimit=100"')
+        os.system(f'browse "https://camptocamp.atlassian.net/secure/RapidBoard.jspa?rapidView={board}&view=planning.nodetail&issueLimit=100"')
         return
 
     if args.debug:
@@ -51,7 +49,7 @@ def main():
         log.setLevel(logging.DEBUG)
         log.debug("Debug mode enabled")
 
-    jiraobj = JIRA({"server": "https://" + args.host})
+    jiraobj = get_jiraobj(args.host)
 
     sprint_id = args.sprint
     if sprint_id == 0:

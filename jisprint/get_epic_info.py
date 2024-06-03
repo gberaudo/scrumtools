@@ -1,7 +1,6 @@
 import argparse
 import logging
-from jira import JIRA
-from .util import str2bool, create_summary
+from .util import get_jiraobj, str2bool, create_summary
 
 log = logging.getLogger("tool")
 
@@ -25,7 +24,7 @@ def main():
 
     jql = f'issuetype in (Epic, Story, Bug, Task, subTaskIssueTypes()) AND "epic link" = {epic_id}'
 
-    jiraobj = JIRA({"server": "https://jira.camptocamp.com"})
+    jiraobj = get_jiraobj()
     results = jiraobj.search_issues(jql)
     create_summary(jiraobj, results, None, None, args.urls)
 
