@@ -13,7 +13,7 @@ The token and your email address should he be exported as environment variables:
 
 ```bash
 export JIRA_USER=example@example.com
-export JIRA_TOKEN=your_token_here
+export JIRA_API_TOKEN=your_token_here
 ```
 
 ### Installation
