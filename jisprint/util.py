@@ -191,6 +191,7 @@ def create_summary(jiraobj, issues, start_date, end_date, show_url, merged_subta
             all_bugs_timespent += time_spent
         else:
             all_other_timespent += time_spent
+        assignee = fields.assignee.displayName if fields.assignee else "-"
         items.append(
             {
                 "category_key": category_key,
@@ -205,6 +206,7 @@ def create_summary(jiraobj, issues, start_date, end_date, show_url, merged_subta
                 "raw": issue,
                 "work_items": work_items,
                 "by_user": by_user_for_issue,
+                "assignee": assignee,
             }
         )
         if category_key == "indeterminate":
@@ -218,7 +220,7 @@ def create_summary(jiraobj, issues, start_date, end_date, show_url, merged_subta
         items = merge_subtasks(items)
     for item in items:
         worked = format_spent_by_user(item["by_user"], 0.15) if worked_on else ""
-        formatted = "{category_key:5.5} {issuetype:5.5} {days_spent}d /{storypoints:>2}sp {key_or_url:<11} {status:<16} {summary} {worked}".format(
+        formatted = "{category_key:5.5} {issuetype:5.5} {days_spent}d /{storypoints:>2}sp {key_or_url:<11} {status:<16} {assignee:<15} {summary} {worked}".format(
             worked=worked, **item
         )
         formatted_list.append(formatted)
